@@ -1,5 +1,9 @@
 package org.openmrs.module.htmlformentry;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,9 +64,11 @@ public class HtmlFormValidator implements Validator {
 	        new FormValidator().validate(hf.getForm(), errors);
 	        errors.popNestedPath();
         }
+
         if (hf.getXmlData() != null) {
             try {
-                @SuppressWarnings("unused")
+	            HtmlFormEntryUtil.stringToDocument(hf.getXmlData());
+
                 FormEntrySession session = new FormEntrySession(HtmlFormEntryUtil.getFakePerson(), hf.getXmlData(), null); // can't access an HttpSession here
                 if (hf.getForm() != null) {
 					if (hf.getForm().getEncounterType() != null && hasEncounterTypeTag(hf.getXmlData())) {

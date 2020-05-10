@@ -150,6 +150,7 @@ public class FormEntrySession {
         velocityEngine.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS,
                 "org.apache.velocity.runtime.log.CommonsLogLogChute");
         velocityEngine.setProperty(CommonsLogLogChute.LOGCHUTE_COMMONS_LOG_NAME, "htmlformentry_velocity");
+        velocityEngine.setProperty(RuntimeConstants.UBERSPECT_CLASSNAME, "org.apache.velocity.util.introspection.SecureUberspector");
 
         try {
             velocityEngine.init();

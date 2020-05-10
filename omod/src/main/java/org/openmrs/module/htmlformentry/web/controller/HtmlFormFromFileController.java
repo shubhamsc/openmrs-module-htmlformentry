@@ -1,14 +1,19 @@
 package org.openmrs.module.htmlformentry.web.controller;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openmrs.Patient;
@@ -51,18 +56,16 @@ public class HtmlFormFromFileController {
 			log.debug("In reference data...");
 		
 		model.addAttribute("previewHtml", "");
-		String message = "";
+		String message;
 		File f = null;
 		try {
 			if (isFileUpload) {
 				MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) request;
 				MultipartFile multipartFile = multipartRequest.getFile("htmlFormFile");
 				if (multipartFile != null) {
-					//use the same file for the logged in user
-					f = new File(SystemUtils.JAVA_IO_TMPDIR, TEMP_HTML_FORM_FILE_PREFIX
-					        + Context.getAuthenticatedUser().getSystemId());
-					if (!f.exists())
-						f.createNewFile();
+					// use an unpredictable file name
+					f = File.createTempFile(TEMP_HTML_FORM_FILE_PREFIX, ".tmp");
+					f.deleteOnExit();
 					
 					filePath = f.getAbsolutePath();
 					FileOutputStream fileOut = new FileOutputStream(f);
@@ -72,8 +75,10 @@ public class HtmlFormFromFileController {
 			} else {
 				if (StringUtils.hasText(filePath)) {
 					f = new File(filePath);
-				} else {
-					message = "You must specify a file path to preview from file";
+					// prevent reading  a file via an absolute path or path traversal
+					if (f.isAbsolute() || !FilenameUtils.normalize(filePath).equals(filePath)) {
+						f = null;
+					}
 				}
 			}
 			
@@ -83,8 +88,11 @@ public class HtmlFormFromFileController {
 				StringWriter writer = new StringWriter();
 				IOUtils.copy(new FileInputStream(f), writer, "UTF-8");
 				String xml = writer.toString();
+
+				// validate file is actually xml
+				HtmlFormEntryUtil.stringToDocument(xml);
 				
-				Patient p = null;
+				Patient p;
 				if (pId != null) {
 					p = Context.getPatientService().getPatient(pId);
 				} else {
